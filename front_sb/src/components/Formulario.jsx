@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Select from 'react-select';
+import { useNavigate } from 'react-router-dom';
 
 const objetivos = [
   { value: 'fuerza', label: 'Fuerza' },
@@ -17,13 +18,18 @@ const lugares = [
   { value: 'aire libre', label: 'Aire libre' },
 ];
 
-const customStyles = {
+// Estilos personalizados con borde rojo si hay error
+const customStyles = (error) => ({
   control: (provided, state) => ({
     ...provided,
     background: 'rgba(255,255,255,0.18)',
-    borderColor: state.isFocused ? '#1976d2' : '#90caf9',
+    borderColor: error ? '#f44336' : state.isFocused ? '#1976d2' : '#90caf9',
     borderRadius: 8,
-    boxShadow: state.isFocused ? '0 0 0 2px #90caf9' : '0 2px 8px rgba(25,118,210,0.07)',
+    boxShadow: error
+      ? '0 0 0 1.5px #f44336'
+      : state.isFocused
+      ? '0 0 0 2px #90caf9'
+      : '0 2px 8px rgba(25,118,210,0.07)',
     minHeight: 48,
     fontFamily: 'inherit',
     fontSize: 16,
@@ -33,7 +39,7 @@ const customStyles = {
   }),
   menu: (provided) => ({
     ...provided,
-    background: 'rgba(255,255,255,0.97)', // fondo claro para el menú
+    background: 'rgba(255,255,255,0.97)',
     borderRadius: 10,
     fontSize: 16,
     color: '#222',
@@ -55,28 +61,48 @@ const customStyles = {
     ...provided,
     color: '#e3f2fd',
   }),
-};
+});
 
-const Formulario = () => {
+const Formulario = ({ onSubmit }) => { 
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     objetivo: null,
     nivel: null,
     lugar: null
   });
 
+  // Estado para errores de cada campo
+  const [errors, setErrors] = useState({
+    objetivo: false,
+    nivel: false,
+    lugar: false
+  });
+
   const handleChange = (selected, { name }) => {
     setForm({ ...form, [name]: selected });
+    // Limpia error cuando usuario selecciona algo
+    setErrors((prev) => ({ ...prev, [name]: false }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.objetivo || !form.nivel || !form.lugar) {
-      alert('Por favor, completa todos los campos.');
+
+    const newErrors = {
+      objetivo: !form.objetivo,
+      nivel: !form.nivel,
+      lugar: !form.lugar,
+    };
+
+    setErrors(newErrors);
+
+    if (Object.values(newErrors).some(Boolean)) {
       return;
     }
-    alert('Formulario enviado!');
-  };
 
+    if (onSubmit) {
+      onSubmit();
+    }
+  };
   return (
     <form onSubmit={handleSubmit} style={{
       maxWidth: 420,
@@ -107,6 +133,7 @@ const Formulario = () => {
         <span role="img" aria-label="dumbbell" style={{fontSize: 28, marginRight: 8, verticalAlign: 'middle'}}>🏋️‍♂️</span>
         ¡Crea tu rutina!
       </h2>
+
       <div style={{ width: '100%' }}>
         <label style={{ fontWeight: 500, color: '#fff', fontFamily: 'inherit', width: '100%', fontSize: 16, marginBottom: 6, display: 'block' }}>
           Objetivo
@@ -117,10 +144,11 @@ const Formulario = () => {
           onChange={handleChange}
           options={objetivos}
           placeholder="Selecciona..."
-          styles={customStyles}
+          styles={customStyles(errors.objetivo)}
           isSearchable={false}
         />
       </div>
+
       <div style={{ width: '100%' }}>
         <label style={{ fontWeight: 500, color: '#fff', fontFamily: 'inherit', width: '100%', fontSize: 16, marginBottom: 6, display: 'block' }}>
           Nivel
@@ -131,10 +159,11 @@ const Formulario = () => {
           onChange={handleChange}
           options={niveles}
           placeholder="Selecciona..."
-          styles={customStyles}
+          styles={customStyles(errors.nivel)}
           isSearchable={false}
         />
       </div>
+
       <div style={{ width: '100%' }}>
         <label style={{ fontWeight: 500, color: '#fff', fontFamily: 'inherit', width: '100%', fontSize: 16, marginBottom: 6, display: 'block' }}>
           ¿Dónde entrenas?
@@ -145,10 +174,11 @@ const Formulario = () => {
           onChange={handleChange}
           options={lugares}
           placeholder="Selecciona..."
-          styles={customStyles}
+          styles={customStyles(errors.lugar)}
           isSearchable={false}
         />
       </div>
+
       <button
         type="submit"
         style={{
